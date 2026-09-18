@@ -29,10 +29,10 @@ services:
     restart: on-failure
 
   pendura-ai-client:
-    image: jorgeroniel07/pendura-ai-client:0.0.4
+    image: jorgeroniel07/pendura-ai-client:0.0.5
     container_name: pendura-ai-cliente
     ports:
-      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+      - "${FRONTEND_PORT}:80"
     depends_on:
       - pendura-ai-api
     networks:

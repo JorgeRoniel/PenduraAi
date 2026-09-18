@@ -1,39 +1,35 @@
-<h1>Projeto Pendura Aí</h1>
-Neste projeto, eu busco agilizar um processo que é muito comum em comércios mais simples no nosso país, o famoso caderninhos de "fiados", onde é bem chato folhear várias páginas até encontrar a dívida da pessoa, fora que é difícil manter uma organização por muito tempo. Esse site agiliza isso pois guarda os seus clientes com suas respectivas dívidas no banco de dados e, quando necessário, apenas ao fazer uma pesquisa você encontra o nome que deseja. É uma solução simples e funcional que pode ajudar muitos empreendedores.
+# Pendura Aí
 
-<h3>Tecnologias:</h3>
-<ul>
- <li>React + TypeScript</li>
- <li>Spring Boot</li>
- <li>PostgreSQL (Banco de Dados)</li>
- <li>Docker</li>
-</ul>
+Aplicação para organizar clientes e dívidas de pequenos comércios. O frontend oficial é o Angular, servido por Nginx; o frontend React em `Projeto-web/` permanece no repositório apenas como legado temporário.
 
-<h3>Imagens:</h3>
-<h4>Home</h4>
-<img src="Projeto-web/src/assets/Home.png" heigth="800px" width="800px">
+## Tecnologias
 
-<h4>Cadastro de Cliente</h4>
-<img src="Projeto-web/src/assets/Cadastro_de_cliente.png" heigth="800px" width="800px">
+- Angular + TypeScript
+- Spring Boot
+- PostgreSQL
+- Docker e Docker Compose
 
-<h4>Pesquisa</h4>
-<img src="Projeto-web/src/assets/Pesquisa_exibição_cliente.png" heigth="800px" width="800px">
+## Executar a aplicação publicada
 
-<h4>Atualização do valor da dívida</h4>
-<img src="Projeto-web/src/assets/Alteração_valor_divida.png" heigth="800px" width="800px">
+Pré-requisitos: Docker Desktop ou Docker Engine e Docker Compose.
 
+Configure um arquivo `.env` na raiz:
 
+```dotenv
+POSTGRES_PORT=5432
+DB_NAME=pendura_ai
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_URL=jdbc:postgresql://postgres:5432/pendura_ai
+JWT_SECRET=uma-chave-secreta-local
+BACKEND_PORT=8080
+FRONTEND_PORT=4200
+```
 
+Suba banco, API e frontend Angular:
 
+```bash
+docker compose up -d
+```
 
-<h2>Como rodar:</h2>
-
- 1 - Clone este repositório
-
- 
- 2 - Certifique-se de possuir Docker Desktop/Docker Engine na sua máquina
-
- 
- 3 - Ao acessar o diretorio onde está o docker compose, digite o comando no terminal 
-
-`docker compose up -d`
+A aplicação ficará em `http://localhost:${FRONTEND_PORT}` e a API em `http://localhost:${BACKEND_PORT}`.

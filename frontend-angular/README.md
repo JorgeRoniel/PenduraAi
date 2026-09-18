@@ -1,75 +1,59 @@
 # Pendura Aí — frontend Angular
 
-Frontend Angular standalone do Pendura Aí. Esta aplicação está sendo desenvolvida em paralelo ao frontend React, que permanece como a aplicação oficial do Docker até uma etapa posterior de integração.
+Frontend oficial do Pendura Aí. O React em `Projeto-web/` foi mantido apenas como legado temporário; a distribuição oficial usa a imagem Angular/Nginx publicada como `jorgeroniel07/pendura-ai-client:0.0.5`.
 
 ## Requisitos
 
-- Node.js 20 ou superior.
-- npm.
-- API Spring Boot e banco de dados em execução para testar os fluxos autenticados.
+- Node.js 20 ou superior
+- npm
+- API Spring Boot e banco disponíveis para testar os fluxos autenticados
 
-## Executar localmente
+## Desenvolvimento local
 
-Na raiz do repositório, inicie a infraestrutura da API:
+Na raiz do repositório, inicie a infraestrutura:
 
 ```bash
 docker compose up
 ```
 
-Em outro terminal, execute o Angular:
+Em outro terminal:
 
 ```bash
 cd frontend-angular
-npm install
+npm ci
 npm start
 ```
 
-A aplicação ficará disponível em `http://localhost:4200` e usará a API em `http://localhost:8080`.
+A aplicação ficará em `http://localhost:4200` e o ambiente de desenvolvimento usa `http://localhost:8080`, configurado em `src/environments/environment.ts`.
 
-Para alterar a URL da API em desenvolvimento, edite `src/environments/environment.ts`. Os caminhos de usuário e dívidas ficam centralizados em `src/app/core/api/api-endpoints.ts`.
+## Build Docker de produção
 
-## Funcionalidades disponíveis
+`API_URL` é obrigatório e fica incorporado ao bundle Angular. Use uma URL acessível pelo navegador:
 
-- Login e cadastro com Reactive Forms e validações.
-- Persistência de sessão com token JWT e usuário no `localStorage`.
-- Guarda de rotas públicas e privada.
-- Pesquisa paginada de dívidas.
-- Cadastro, atualização e quitação de dívidas.
-- Feedbacks de carregamento, sucesso, erro e lista vazia.
-- Layout responsivo e modais acessíveis.
+```bash
+docker build \
+  --build-arg API_URL=https://api.exemplo.com \
+  -t jorgeroniel07/pendura-ai-client:0.0.5 .
+```
+
+A imagem serve os arquivos pela porta interna `80`. O Nginx usa `try_files` com fallback para `index.html`, permitindo abrir diretamente `/`, `/login` e `/register`.
 
 ## Validação
 
-Build de produção:
-
 ```bash
-npm run build
-```
-
-Testes unitários:
-
-```bash
+npm run build -- --configuration production
 npm test -- --watch=false --browsers=ChromeHeadless
 ```
 
-Os testes cobrem autenticação/sessão, interceptor JWT, guards, serviços HTTP, validações dos formulários e renderização da área de dívidas. É necessário ter Chrome ou Chromium disponível para o launcher `ChromeHeadless`; em ambientes sem navegador, a etapa de compilação dos testes pode ser conferida com:
+O build local de produção mantém o marcador de URL até que uma imagem seja construída com `API_URL`; a imagem publicada sempre deve ser gerada com esse argumento.
 
-```bash
-npx ng test --watch=false --browsers=ChromeHeadless --code-coverage=false
-```
+## Funcionalidades
 
-## Arquitetura resumida
+- Login e cadastro com Reactive Forms.
+- Sessão JWT persistida no `localStorage`.
+- Proteção de rotas públicas e privadas.
+- Pesquisa paginada, cadastro, atualização e quitação de dívidas.
+- Feedbacks de carregamento, sucesso, erro e lista vazia.
+- Layout responsivo e modais acessíveis.
 
-- `src/app/core`: modelos, endpoints, serviços, interceptor e guards.
-- `src/app/features/auth`: layout, login e cadastro.
-- `src/app/features/debts`: área principal, pesquisa e card de dívida.
-- `src/app/features/shell`: navbar autenticada.
-- `src/app/shared`: modal e feedback reutilizáveis.
-
-A aplicação usa standalone components, Signals para estado local/sessão, Reactive Forms e o control flow moderno do Angular (`@if`, `@for` e `@empty`).
-
-## Limitações desta etapa
-
-- O Angular ainda não substitui o React no Docker/nginx.
-- A API não foi alterada; seus contratos e respostas continuam sendo a fonte de verdade.
-- A integração definitiva de execução e a remoção do React ficam para uma etapa posterior.
+Os endpoints continuam centralizados em `src/app/core/api/api-endpoints.ts`, preservando os contratos da API Spring Boot.
