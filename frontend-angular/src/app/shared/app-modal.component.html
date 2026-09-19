@@ -1,0 +1,11 @@
+@if (open()) {
+  <div class="modal-backdrop" (click)="closed.emit()">
+    <section #modalElement class="modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="labelledBy()" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 [id]="labelledBy()">{{ title() }}</h2>
+        <button #closeButton class="modal-close" type="button" aria-label="Fechar janela" (click)="closed.emit()">×</button>
+      </div>
+      <div class="modal-body"><ng-content /></div>
+    </section>
+  </div>
+}

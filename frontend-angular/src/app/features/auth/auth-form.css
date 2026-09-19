@@ -1,0 +1,12 @@
+.auth-form { display: grid; gap: var(--space-5); }
+.field { display: grid; gap: var(--space-2); }
+.field label { color: var(--color-ink); font-size: .88rem; font-weight: 700; }
+.field input { width: 100%; min-height: 3.1rem; padding: .8rem 1rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-ink); background: var(--color-input); transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast); }
+.field input::placeholder { color: var(--color-ink-muted); opacity: .72; }
+.field input:hover { border-color: var(--color-primary-strong); }
+.field input:focus { border-color: var(--color-primary); background: var(--color-surface); box-shadow: 0 0 0 3px var(--color-primary-soft); outline: none; }
+.field input[aria-invalid='true'] { border-color: var(--color-danger); }
+.field-error { color: var(--color-danger-strong); font-size: .78rem; }
+.form-submit { min-height: 3.1rem; margin-top: var(--space-2); padding: .8rem 1.25rem; border: 0; border-radius: var(--radius-sm); color: var(--color-ink-inverse); background: var(--color-primary); box-shadow: var(--shadow-soft); cursor: pointer; font-weight: 700; transition: background var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast); }
+.form-submit:hover:not(:disabled) { background: var(--color-primary-strong); transform: translateY(-1px); }
+.form-submit:disabled { cursor: wait; opacity: .65; }

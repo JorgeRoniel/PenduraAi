@@ -1,0 +1,90 @@
+<div class="authenticated-shell">
+  <app-navbar [user]="user()" (logoutRequested)="logout()" />
+
+  <main class="home-content">
+    <section class="home-heading" aria-labelledby="home-title">
+      <div>
+        <span class="eyebrow">Área principal</span>
+        <h1 id="home-title">Suas pendências, sob controle.</h1>
+        <p>Consulte e atualize os registros dos seus clientes em um só lugar.</p>
+      </div>
+      <button class="add-button" type="button" (click)="openCreateModal()"><span aria-hidden="true">+</span> Nova dívida</button>
+    </section>
+
+    <section class="search-panel" aria-labelledby="search-title">
+      <div>
+        <h2 id="search-title">Pesquisar dívidas</h2>
+        <p>Encontre um cliente pelo nome para consultar o valor pendente.</p>
+      </div>
+      <form class="search-form" [formGroup]="searchForm" (ngSubmit)="searchDebts()">
+        <label class="visually-hidden" for="client-search">Nome do cliente</label>
+        <input id="client-search" type="search" formControlName="cliente" placeholder="Digite o nome do cliente" />
+        <button class="primary-button" type="submit" [disabled]="isLoading()">{{ isLoading() ? 'Buscando...' : 'Pesquisar' }}</button>
+      </form>
+    </section>
+
+    @if (successMessage()) {
+      <app-feedback [message]="successMessage()" tone="success" />
+    }
+    @if (errorMessage()) {
+      <app-feedback [message]="errorMessage()" tone="error" />
+    }
+
+    <section class="debt-list" aria-live="polite" aria-label="Lista de dívidas">
+      @if (isLoading()) {
+        <div class="state-card"><span class="loader" aria-hidden="true"></span><p>Buscando registros...</p></div>
+      } @else {
+        @for (debt of debts(); track debt.id) {
+          <app-debt-card [debt]="debt" (editRequested)="openEditModal($event)" (settleRequested)="openSettleModal($event)" />
+        } @empty {
+          <div class="state-card state-card--empty">
+            <span class="empty-icon" aria-hidden="true">⌕</span>
+            <h2>Nenhuma dívida encontrada</h2>
+            <p>Pesquise outro cliente ou cadastre uma nova dívida para começar.</p>
+          </div>
+        }
+      }
+    </section>
+  </main>
+
+  <app-modal [open]="modal() === 'create'" title="Cadastrar dívida" labelledBy="create-debt-title" (closed)="closeModal()">
+    <form class="modal-form" [formGroup]="createForm" (ngSubmit)="createDebt()" novalidate>
+      <div class="field">
+        <label for="debt-client">Nome do cliente</label>
+        <input id="debt-client" type="text" formControlName="cliente" autocomplete="off" placeholder="Digite o nome" />
+        @if (createForm.controls.cliente.invalid && createForm.controls.cliente.touched) { <span class="field-error">Informe o nome do cliente.</span> }
+      </div>
+      <div class="field">
+        <label for="debt-value">Valor</label>
+        <input id="debt-value" type="number" formControlName="valor" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" />
+        @if (createForm.controls.valor.invalid && createForm.controls.valor.touched) { <span class="field-error">Informe um valor mínimo de R$ 0,01.</span> }
+      </div>
+      <button class="primary-button" type="submit" [disabled]="isSubmitting()">{{ isSubmitting() ? 'Salvando...' : 'Salvar dívida' }}</button>
+    </form>
+  </app-modal>
+
+  @if (selectedDebt(); as debt) {
+    <app-modal [open]="modal() === 'edit'" title="Atualizar valor" labelledBy="edit-debt-title" (closed)="closeModal()">
+      <form class="modal-form" [formGroup]="editForm" (ngSubmit)="updateDebt()" novalidate>
+        <p class="modal-context">{{ debt.cliente }} · valor atual: <strong>{{ debt.valor | currency: 'BRL' }}</strong></p>
+        <div class="field">
+          <label for="edit-value">Novo valor</label>
+          <input id="edit-value" type="number" formControlName="novoValor" min="0.01" step="0.01" inputmode="decimal" />
+          @if (editForm.controls.novoValor.invalid && editForm.controls.novoValor.touched) { <span class="field-error">Informe um valor mínimo de R$ 0,01.</span> }
+        </div>
+        <button class="primary-button" type="submit" [disabled]="isSubmitting()">{{ isSubmitting() ? 'Salvando...' : 'Salvar alteração' }}</button>
+      </form>
+    </app-modal>
+
+    <app-modal [open]="modal() === 'settle'" title="Quitar dívida" labelledBy="settle-debt-title" (closed)="closeModal()">
+      <div class="confirmation">
+        <p>Tem certeza que deseja quitar a dívida de <strong>{{ debt.cliente }}</strong>?</p>
+        <p class="modal-context">Essa ação removerá o registro da sua lista.</p>
+        <div class="confirmation-actions">
+          <button class="secondary-button" type="button" [disabled]="isSubmitting()" (click)="closeModal()">Cancelar</button>
+          <button class="danger-button" type="button" [disabled]="isSubmitting()" (click)="settleDebt()">{{ isSubmitting() ? 'Quitando...' : 'Sim, quitar' }}</button>
+        </div>
+      </div>
+    </app-modal>
+  }
+</div>

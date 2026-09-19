@@ -1,0 +1,24 @@
+@font-face {
+  font-family: 'Momo Trust Display';
+  src: url('/fonts/MomoTrustDisplay-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  src: url('/fonts/Outfit-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root { --color-surface: #fff; --color-surface-raised: #ecf3f3; --color-ink: #000; --color-ink-muted: #302b2b; --color-ink-inverse: #fff; --color-primary: #ff8d23; --color-primary-strong: #bb7f0f; --color-primary-soft: #fff1e3; --color-border: rgb(48 43 43 / 47.3%); --color-border-accent: #ffb66f; --color-input: #ebe3e3; --color-card: #f8f3f3; --color-danger: #f82525; --color-danger-strong: #800202; --color-success: #3f8f5b; --color-success-soft: #e1f1e5; --color-overlay: #03030360; --font-body: 'Outfit', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; --font-display: 'Momo Trust Display', 'Trebuchet MS', ui-sans-serif, system-ui, sans-serif; --content-width: 76rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem; --space-20: 5rem; --radius-sm: .75rem; --radius-md: 1rem; --radius-lg: 1.5rem; --radius-pill: 999px; --shadow-soft: 0 .5rem 1.5rem rgb(255 141 35 / 22%); --shadow-card: 0 1.25rem 3rem rgb(0 0 0 / 10%); --transition-fast: 160ms ease; }
+* { box-sizing: border-box; }
+html { min-width: 320px; background: var(--color-surface); color: var(--color-ink); font-family: var(--font-body); font-synthesis: none; text-rendering: optimizeLegibility; }
+body { min-width: 320px; min-height: 100vh; margin: 0; overflow-x: hidden; }
+button, input, textarea, select { font: inherit; }
+a, button { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid #eab45e; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }

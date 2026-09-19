@@ -1,0 +1,15 @@
+<article class="debt-card">
+  <div class="debt-info">
+    <span class="debt-label">Cliente</span>
+    <h3>{{ debt().cliente }}</h3>
+    <span class="debt-date">Registrada em {{ debt().createdAt | date: 'dd/MM/yyyy' }}</span>
+  </div>
+  <div class="debt-value">
+    <span class="debt-label">Valor pendente</span>
+    <strong>{{ debt().valor | currency: 'BRL' }}</strong>
+  </div>
+  <div class="debt-actions">
+    <button class="button button-secondary" type="button" (click)="editRequested.emit(debt())">Editar</button>
+    <button class="button button-danger" type="button" (click)="settleRequested.emit(debt())">Quitar</button>
+  </div>
+</article>
