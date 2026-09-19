@@ -10,19 +10,17 @@ describe('HomeComponent', () => {
   let http: HttpTestingController;
 
   beforeEach(async () => {
-    localStorage.setItem('token', 'abc123');
-    localStorage.setItem('user', JSON.stringify({ id: 1, nome: 'Ana', email: 'ana@example.com', role: 'USER' }));
     await TestBed.configureTestingModule({
       imports: [HomeComponent],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
     fixture = TestBed.createComponent(HomeComponent);
     http = TestBed.inject(HttpTestingController);
+    http.expectOne(API_ENDPOINTS.currentUser).flush(null, { status: 401, statusText: 'Unauthorized' });
   });
 
   afterEach(() => {
     http.verify();
-    localStorage.clear();
   });
 
   it('renders the paginated debt results returned by the API', () => {

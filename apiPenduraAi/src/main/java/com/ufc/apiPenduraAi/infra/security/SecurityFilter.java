@@ -7,6 +7,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -50,17 +51,21 @@ public class SecurityFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         return path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
-                || path.startsWith("/api/user/login")
+                || path.startsWith("/api/user/auth/login")
                 || path.startsWith("/api/user/register")
                 || request.getMethod().equalsIgnoreCase("OPTIONS");
     }
 
     private String recoveryToken(HttpServletRequest request) {
-        var authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
             return null;
         }
-        String token = authHeader.substring(7);
-        return token.isBlank() ? null : token;
+        for (Cookie cookie : cookies) {
+            if ("AUTH_TOKEN".equals(cookie.getName()) && !cookie.getValue().isBlank()) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

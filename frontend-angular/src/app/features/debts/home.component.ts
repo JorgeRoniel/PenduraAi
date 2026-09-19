@@ -3,7 +3,7 @@ import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { finalize } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { CreateDebtPayload, Debt } from '../../core/models/debt.model';
 import { DebtService } from '../../core/services/debt.service';
@@ -22,6 +22,7 @@ type ModalName = 'create' | 'edit' | 'settle' | null;
   styleUrl: './home.component.css'
 })
 export class HomeComponent {
+  private searchSubscription?: Subscription;
   private readonly formBuilder = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly debtService = inject(DebtService);
@@ -54,11 +55,12 @@ export class HomeComponent {
   }
 
   searchDebts(): void {
+    this.searchSubscription?.unsubscribe();
     this.isLoading.set(true);
     this.errorMessage.set('');
     const cliente = this.searchForm.controls.cliente.value.trim();
 
-    this.debtService.search({ cliente, page: 0, size: 10, sort: 'cliente' }).pipe(
+    this.searchSubscription = this.debtService.search({ cliente, page: 0, size: 10, sort: 'cliente' }).pipe(
       finalize(() => this.isLoading.set(false))
     ).subscribe({
       next: (page) => this.debts.set(page.content),

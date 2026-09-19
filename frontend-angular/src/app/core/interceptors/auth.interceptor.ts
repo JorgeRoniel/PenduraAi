@@ -1,20 +1,12 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
-const TOKEN_KEY = 'token';
-
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  const token = localStorage.getItem(TOKEN_KEY);
-
-  if (!token || !isApiRequest(request.url)) {
+  if (!isApiRequest(request.url)) {
     return next(request);
   }
 
-  return next(request.clone({
-    setHeaders: {
-      Authorization: `Bearer ${token}`
-    }
-  }));
+  return next(request.clone({ withCredentials: true }));
 };
 
 function isApiRequest(requestUrl: string): boolean {

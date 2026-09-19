@@ -3,7 +3,7 @@ import { ReactiveFormsModule, Validators, FormBuilder } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthLayoutComponent } from './auth-layout.component';
-import { getAuthErrorMessage } from './auth-feedback';
+import { getLoginErrorMessage } from './auth-feedback';
 import { AuthService } from '../../core/services/auth.service';
 import { FeedbackComponent } from '../../shared/feedback.component';
 
@@ -43,7 +43,7 @@ export class LoginComponent {
     ).subscribe({
       next: () => void this.router.navigateByUrl('/'),
       error: (error: unknown) => this.errorMessage.set(
-        getAuthErrorMessage(error, 'Não foi possível entrar. Tente novamente.')
+        getLoginErrorMessage(error, 'Não foi possível entrar. Tente novamente.')
       )
     });
   }

@@ -1,16 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
-import { map, Observable, tap } from 'rxjs';
+import { finalize, map, Observable, ReplaySubject, take, tap } from 'rxjs';
 import { API_ENDPOINTS } from '../api/api-endpoints';
 import { LoginCredentials, LoginResponse, RegisterUserPayload, User } from '../models/user.model';
-
-const TOKEN_KEY = 'token';
-const USER_KEY = 'user';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   readonly user = signal<User | null>(null);
   readonly loading = signal(true);
+  private readonly sessionReady = new ReplaySubject<void>(1);
 
   constructor(private readonly http: HttpClient) {
     this.restoreSession();
@@ -30,42 +28,37 @@ export class AuthService {
 
   logout(): void {
     this.user.set(null);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
   }
 
   isAuthenticated(): boolean {
-    return this.user() !== null && Boolean(localStorage.getItem(TOKEN_KEY));
+    return this.user() !== null;
+  }
+
+  whenReady(): Observable<boolean> {
+    return this.sessionReady.pipe(
+      take(1),
+      map(() => this.isAuthenticated())
+    );
   }
 
   private restoreSession(): void {
-    try {
-      const token = localStorage.getItem(TOKEN_KEY);
-      const storedUser = localStorage.getItem(USER_KEY);
-
-      if (!token || !storedUser) {
-        this.clearStorage();
-        return;
-      }
-
-      const user = JSON.parse(storedUser) as User;
-      if (!this.isValidUser(user)) {
-        this.clearStorage();
-        return;
-      }
-
-      this.user.set(user);
-    } catch {
-      this.clearStorage();
-    } finally {
-      this.loading.set(false);
-    }
+    this.http.get<User>(API_ENDPOINTS.currentUser).pipe(
+      finalize(() => {
+        this.loading.set(false);
+        this.sessionReady.next();
+        this.sessionReady.complete();
+      })
+    ).subscribe({
+      next: (user) => {
+        if (this.isValidUser(user)) this.user.set(user);
+      },
+      error: () => this.user.set(null)
+    });
   }
 
   private saveSession(response: LoginResponse): void {
-    const user = this.toUser(response);
-    localStorage.setItem(TOKEN_KEY, response.token);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    // The API stores the token in a Secure, HttpOnly cookie. JavaScript must
+    // not copy that token or the user profile into browser storage.
   }
 
   private toUser(response: LoginResponse): User {
@@ -77,8 +70,4 @@ export class AuthService {
       && typeof value.email === 'string' && typeof value.role === 'string';
   }
 
-  private clearStorage(): void {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-  }
 }

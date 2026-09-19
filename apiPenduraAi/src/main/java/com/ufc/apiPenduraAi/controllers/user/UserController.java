@@ -13,6 +13,12 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.http.ResponseCookie;
+import org.springframework.beans.factory.annotation.Value;
+import jakarta.servlet.http.HttpServletResponse;
+import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/user")
@@ -21,15 +27,34 @@ public class UserController {
 
     private final UserServices services;
 
+    @Value("${auth.cookie.secure:true}")
+    private boolean secureCookie;
+
     @PostMapping("/register")
     public ResponseEntity<String> createUser(@RequestBody @Valid CreateUserDTO data) {
         services.createUser(data);
         return ResponseEntity.status(HttpStatus.CREATED).body("Usuário criado com sucesso!");
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<ReturnLoginDTO> login(@RequestBody @Valid LoginUserDTO data) {
-        return ResponseEntity.status(HttpStatus.OK).body(services.authUser(data));
+    @PostMapping("/auth/login")
+    public ResponseEntity<ReturnLoginDTO> login(@RequestBody @Valid LoginUserDTO data, HttpServletResponse response) {
+        ReturnLoginDTO login = services.authUser(data);
+        ResponseCookie cookie = ResponseCookie.from("AUTH_TOKEN", login.token())
+                .httpOnly(true)
+                .secure(secureCookie)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(Duration.ofHours(1))
+                .build();
+        response.addHeader("Set-Cookie", cookie.toString());
+        return ResponseEntity.status(HttpStatus.OK).body(login);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ReturnUserDTO> currentUser(@AuthenticationPrincipal UserDetails principal) {
+        com.ufc.apiPenduraAi.domain.user.User user = (com.ufc.apiPenduraAi.domain.user.User) principal;
+        return ResponseEntity.ok(new ReturnUserDTO(
+                user.getId(), user.getNome(), user.getEmail(), user.getRole().name(), user.getCreatedAt()));
     }
 
     @GetMapping

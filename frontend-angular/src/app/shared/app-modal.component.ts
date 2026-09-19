@@ -38,8 +38,8 @@ export class AppModalComponent {
     if (event.key !== 'Tab') return;
 
     const focusable = Array.from(this.modalElement?.nativeElement.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    ) ?? []);
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ) ?? []).filter((element) => element.getClientRects().length > 0);
     if (!focusable.length) return;
 
     const first = focusable[0];

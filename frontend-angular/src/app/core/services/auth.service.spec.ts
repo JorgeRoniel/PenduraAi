@@ -15,6 +15,7 @@ describe('AuthService', () => {
     });
     service = TestBed.inject(AuthService);
     http = TestBed.inject(HttpTestingController);
+    http.expectOne(API_ENDPOINTS.currentUser).flush(null, { status: 401, statusText: 'Unauthorized' });
   });
 
   afterEach(() => {
@@ -35,32 +36,26 @@ describe('AuthService', () => {
 
     expect(resultId).toBe(7);
     expect(service.user()?.nome).toBe('Ana');
-    expect(localStorage.getItem('token')).toBe('token-123');
-    expect(JSON.parse(localStorage.getItem('user') ?? '{}').email).toBe('ana@example.com');
+    expect(localStorage.length).toBe(0);
   });
 
   it('clears corrupted session data during restoration', () => {
-    localStorage.setItem('token', 'token-123');
-    localStorage.setItem('user', '{invalid-json');
-
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [AuthService] });
+    TestBed.configureTestingModule({ providers: [AuthService, provideHttpClient(), provideHttpClientTesting()] });
     const restored = TestBed.inject(AuthService);
+    const restoredHttp = TestBed.inject(HttpTestingController);
+    restoredHttp.expectOne(API_ENDPOINTS.currentUser).flush(null, { status: 401, statusText: 'Unauthorized' });
 
     expect(restored.user()).toBeNull();
-    expect(localStorage.getItem('token')).toBeNull();
-    expect(localStorage.getItem('user')).toBeNull();
     expect(restored.loading()).toBeFalse();
   });
 
   it('removes the complete session on logout', () => {
-    localStorage.setItem('token', 'token-123');
-    localStorage.setItem('user', JSON.stringify({ id: 1, nome: 'Ana', email: 'ana@example.com', role: 'USER' }));
+    service.user.set({ id: 1, nome: 'Ana', email: 'ana@example.com', role: 'USER' });
 
     service.logout();
 
     expect(service.user()).toBeNull();
-    expect(localStorage.getItem('token')).toBeNull();
-    expect(localStorage.getItem('user')).toBeNull();
+    expect(localStorage.length).toBe(0);
   });
 });

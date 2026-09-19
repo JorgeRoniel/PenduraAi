@@ -23,29 +23,20 @@ describe('authInterceptor', () => {
     localStorage.clear();
   });
 
-  it('adds the bearer token when one exists', () => {
-    localStorage.setItem('token', 'abc123');
+  it('sends API requests with credentials for the HttpOnly auth cookie', () => {
     client.get(API_ENDPOINTS.user).subscribe();
 
     const request = http.expectOne(API_ENDPOINTS.user);
-    expect(request.request.headers.get('Authorization')).toBe('Bearer abc123');
-    request.flush({});
-  });
-
-  it('does not add authorization when there is no token', () => {
-    client.get(API_ENDPOINTS.user).subscribe();
-
-    const request = http.expectOne(API_ENDPOINTS.user);
+    expect(request.request.withCredentials).toBeTrue();
     expect(request.request.headers.has('Authorization')).toBeFalse();
     request.flush({});
   });
 
-  it('does not send the token to another origin', () => {
-    localStorage.setItem('token', 'abc123');
+  it('does not add credentials to another origin', () => {
     client.get('/assets/config.json').subscribe();
 
     const request = http.expectOne('/assets/config.json');
-    expect(request.request.headers.has('Authorization')).toBeFalse();
+    expect(request.request.withCredentials).toBeFalse();
     request.flush({});
   });
 });

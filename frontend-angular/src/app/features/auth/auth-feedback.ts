@@ -5,10 +5,6 @@ export function getAuthErrorMessage(error: unknown, fallback: string): string {
     return fallback;
   }
 
-  if (error.status === 401 || error.status === 403) {
-    return 'E-mail ou senha incorretos.';
-  }
-
   if (typeof error.error === 'string' && error.error.trim()) {
     return error.error;
   }
@@ -18,6 +14,13 @@ export function getAuthErrorMessage(error: unknown, fallback: string): string {
   }
 
   return fallback;
+}
+
+export function getLoginErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) {
+    return 'E-mail ou senha incorretos.';
+  }
+  return getAuthErrorMessage(error, fallback);
 }
 
 function isMessageBody(value: unknown): value is { message: string } {
