@@ -29,7 +29,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         var token = recoveryToken(request);
         if (token != null) {
             try {
-                var subject = tokenService.verifyToken(token);
+                var subject = tokenService.verifyAccessToken(token);
                 UserDetails user = userRepository.findByEmail(subject);
 
                 if (user != null) {
@@ -51,7 +51,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         return path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
-                || path.startsWith("/api/user/auth/login")
+                || path.startsWith("/api/user/auth/")
                 || path.startsWith("/api/user/register")
                 || request.getMethod().equalsIgnoreCase("OPTIONS");
     }
@@ -62,7 +62,7 @@ public class SecurityFilter extends OncePerRequestFilter {
             return null;
         }
         for (Cookie cookie : cookies) {
-            if ("AUTH_TOKEN".equals(cookie.getName()) && !cookie.getValue().isBlank()) {
+            if ("ACCESS_TOKEN".equals(cookie.getName()) && !cookie.getValue().isBlank()) {
                 return cookie.getValue();
             }
         }

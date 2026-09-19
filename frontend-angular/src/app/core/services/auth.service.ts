@@ -1,12 +1,14 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, signal } from '@angular/core';
-import { finalize, map, Observable, ReplaySubject, take, tap } from 'rxjs';
+import { Injectable, inject, signal } from '@angular/core';
+import { catchError, finalize, map, Observable, of, ReplaySubject, take, tap } from 'rxjs';
 import { API_ENDPOINTS } from '../api/api-endpoints';
-import { LoginCredentials, LoginResponse, RegisterUserPayload, User } from '../models/user.model';
+import { LoginCredentials, RegisterUserPayload, User } from '../models/user.model';
+import { AuthStateService } from './auth-state.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  readonly user = signal<User | null>(null);
+  private readonly state = inject(AuthStateService);
+  readonly user = this.state.user;
   readonly loading = signal(true);
   private readonly sessionReady = new ReplaySubject<void>(1);
 
@@ -15,9 +17,7 @@ export class AuthService {
   }
 
   login(credentials: LoginCredentials): Observable<User> {
-    return this.http.post<LoginResponse>(API_ENDPOINTS.userLogin, credentials).pipe(
-      tap((response) => this.saveSession(response)),
-      map((response) => this.toUser(response)),
+    return this.http.post<User>(API_ENDPOINTS.userLogin, credentials).pipe(
       tap((user) => this.user.set(user))
     );
   }
@@ -26,8 +26,11 @@ export class AuthService {
     return this.http.post(API_ENDPOINTS.userRegister, payload, { responseType: 'text' });
   }
 
-  logout(): void {
-    this.user.set(null);
+  logout(): Observable<void> {
+    this.state.clear();
+    return this.http.post<void>(API_ENDPOINTS.userLogout, {}).pipe(
+      catchError(() => of(undefined))
+    );
   }
 
   isAuthenticated(): boolean {
@@ -52,17 +55,8 @@ export class AuthService {
       next: (user) => {
         if (this.isValidUser(user)) this.user.set(user);
       },
-      error: () => this.user.set(null)
+      error: () => this.state.clear()
     });
-  }
-
-  private saveSession(response: LoginResponse): void {
-    // The API stores the token in a Secure, HttpOnly cookie. JavaScript must
-    // not copy that token or the user profile into browser storage.
-  }
-
-  private toUser(response: LoginResponse): User {
-    return { id: response.id, nome: response.nome, email: response.email, role: response.role };
   }
 
   private isValidUser(value: User): boolean {

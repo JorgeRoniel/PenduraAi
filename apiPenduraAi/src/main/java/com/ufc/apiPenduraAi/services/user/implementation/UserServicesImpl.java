@@ -4,10 +4,8 @@ import com.ufc.apiPenduraAi.domain.user.User;
 import com.ufc.apiPenduraAi.domain.user.UserRoles;
 import com.ufc.apiPenduraAi.dtos.user.CreateUserDTO;
 import com.ufc.apiPenduraAi.dtos.user.LoginUserDTO;
-import com.ufc.apiPenduraAi.dtos.user.ReturnLoginDTO;
 import com.ufc.apiPenduraAi.dtos.user.ReturnUserDTO;
 import com.ufc.apiPenduraAi.repositories.user.UserRepository;
-import com.ufc.apiPenduraAi.services.token.TokenService;
 import com.ufc.apiPenduraAi.services.user.UserServices;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,7 +22,6 @@ public class UserServicesImpl implements UserServices {
     private final UserRepository repository;
     private final PasswordEncoder encoder;
     private final AuthenticationManager authenticationManager;
-    private final TokenService tokenService;
 
     @Override
     public User createUser(CreateUserDTO data) {
@@ -37,12 +34,15 @@ public class UserServicesImpl implements UserServices {
     }
 
     @Override
-    public ReturnLoginDTO authUser(LoginUserDTO data) {
+    public User authUser(LoginUserDTO data) {
         var emailpass = new UsernamePasswordAuthenticationToken(data.email(), data.senha());
         var auth = authenticationManager.authenticate(emailpass);
-        User user = (User) auth.getPrincipal();
-        String token = tokenService.createToken(user);
-        return new ReturnLoginDTO(token, user.getId(), user.getEmail(), user.getNome(), user.getRole().name());
+        return (User) auth.getPrincipal();
+    }
+
+    @Override
+    public User findByEmail(String email) {
+        return repository.findByEmail(email);
     }
 
     @Override

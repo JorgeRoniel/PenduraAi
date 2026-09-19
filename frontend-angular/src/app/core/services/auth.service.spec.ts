@@ -23,7 +23,7 @@ describe('AuthService', () => {
     localStorage.clear();
   });
 
-  it('stores the token and user after a successful login', () => {
+  it('stores only the authenticated user in memory after a successful login', () => {
     let resultId: number | undefined;
 
     service.login({ email: 'ana@example.com', senha: '123456' }).subscribe((user) => {
@@ -32,7 +32,7 @@ describe('AuthService', () => {
 
     const request = http.expectOne(API_ENDPOINTS.userLogin);
     expect(request.request.method).toBe('POST');
-    request.flush({ token: 'token-123', id: 7, email: 'ana@example.com', nome: 'Ana', role: 'USER' });
+    request.flush({ id: 7, email: 'ana@example.com', nome: 'Ana', role: 'USER' });
 
     expect(resultId).toBe(7);
     expect(service.user()?.nome).toBe('Ana');
@@ -53,7 +53,10 @@ describe('AuthService', () => {
   it('removes the complete session on logout', () => {
     service.user.set({ id: 1, nome: 'Ana', email: 'ana@example.com', role: 'USER' });
 
-    service.logout();
+    service.logout().subscribe();
+    const request = http.expectOne(API_ENDPOINTS.userLogout);
+    expect(request.request.method).toBe('POST');
+    request.flush(null, { status: 204, statusText: 'No Content' });
 
     expect(service.user()).toBeNull();
     expect(localStorage.length).toBe(0);
