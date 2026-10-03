@@ -1,6 +1,7 @@
 package com.ufc.apiPenduraAi.services.user.implementation;
 
 import com.ufc.apiPenduraAi.repositories.user.UserRepository;
+import com.ufc.apiPenduraAi.utils.EmailNormalizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -15,7 +16,7 @@ public class AuthService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserDetails user = repository.findByEmail(username);
+        UserDetails user = repository.findByEmail(EmailNormalizer.normalized(username));
         if (user == null) {
             throw new UsernameNotFoundException("Usuário não encontrado: " + username);
         }
