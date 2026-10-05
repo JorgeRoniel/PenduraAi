@@ -1,6 +1,8 @@
 package com.ufc.apiPenduraAi;
 
+import com.ufc.apiPenduraAi.domain.divida.Divida;
 import com.ufc.apiPenduraAi.domain.user.User;
+import com.ufc.apiPenduraAi.repositories.divida.DividaRepository;
 import com.ufc.apiPenduraAi.repositories.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,7 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.math.BigDecimal;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,12 +34,14 @@ class ApiPenduraAiApplicationTests {
 
 	private final WebApplicationContext context;
 	private final UserRepository repository;
+	private final DividaRepository dividaRepository;
 	private MockMvc mock;
 
 	@Autowired
-	public ApiPenduraAiApplicationTests(WebApplicationContext context, UserRepository repository){
+	public ApiPenduraAiApplicationTests(WebApplicationContext context, UserRepository repository, DividaRepository dividaRepository){
 		this.repository = repository;
 		this.context = context;
+		this.dividaRepository = dividaRepository;
 	}
 
 	@BeforeEach
@@ -90,6 +96,25 @@ class ApiPenduraAiApplicationTests {
 				DataIntegrityViolationException.class,
 				() -> repository.saveAndFlush(user2)
 		);
+	}
+
+	@Test
+	@Transactional
+	void databaseAcceptsMinimumDebtValue(){
+		User owner = new User("usuario", "user@mail.com", "encoded-password");
+		repository.saveAndFlush(owner);
+
+		Divida divida = dividaRepository.saveAndFlush(
+				new Divida(
+						"cliente",
+						new BigDecimal("0.01"),
+						owner
+				)
+		);
+
+		assertNotNull(divida.getId());
+
+
 	}
 
 	@Container

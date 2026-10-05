@@ -37,8 +37,8 @@ public class DtoValidationTest {
     @Test
     void createUserRejectsFieldsLargerThanDatabaseColumns() {
         CreateUserDTO dto = new CreateUserDTO(
-                "A".repeat(101),
-                "a".repeat(92) + "@mail.com",
+                "A".repeat(51),
+                "a".repeat(246) + "@mail.com",
                 "123456789"
         );
 
