@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
@@ -113,10 +114,20 @@ class ApiPenduraAiApplicationTests {
 		);
 
 		assertNotNull(divida.getId());
-
-
 	}
 
+	@Test
+	void userListLimitsRequestedPageSize() throws Exception{
+		mock.perform(
+				get("/api/user")
+						.param("size", "1000")
+						.with(user("admin@example.com").roles("ADMIN"))
+		)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.size").value(50));
+	}
+
+	// Container Postgres para rodar os testes de integração: Backend <--> BD.
 	@Container
 	@ServiceConnection
 	static final PostgreSQLContainer postgres =
