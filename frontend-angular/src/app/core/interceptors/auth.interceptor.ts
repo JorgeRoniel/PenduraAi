@@ -6,6 +6,7 @@ import { environment } from '../../../environments/environment';
 import { API_ENDPOINTS } from '../api/api-endpoints';
 import { AuthStateService } from '../services/auth-state.service';
 import { SessionRefreshService } from '../services/session-refresh.service';
+import { readXsrfToken, XSRF_HEADER_NAME } from '../security/xsrf-token';
 
 const RETRIED_AFTER_REFRESH = new HttpContextToken<boolean>(() => false);
 
@@ -16,7 +17,19 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
     return next(request);
   }
 
-  const authenticatedRequest = request.clone({ withCredentials: true });
+  let authenticatedRequest = request.clone({ withCredentials: true });
+
+  if (requiresCsrfToken(request.method)) {
+    const csrfToken = readXsrfToken();
+
+    if (csrfToken) {
+      authenticatedRequest = authenticatedRequest.clone({
+        setHeaders: {
+          [XSRF_HEADER_NAME]: csrfToken,
+        },
+      });
+    }
+  }
   if (isAuthRequest(request.url) || request.context.get(RETRIED_AFTER_REFRESH)) {
     return next(authenticatedRequest);
   }
@@ -28,30 +41,42 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
       }
 
       return refreshService.refresh().pipe(
-        switchMap(() => next(authenticatedRequest.clone({
-          context: authenticatedRequest.context.set(RETRIED_AFTER_REFRESH, true)
-        }))),
+        switchMap(() =>
+          next(
+            authenticatedRequest.clone({
+              context: authenticatedRequest.context.set(RETRIED_AFTER_REFRESH, true),
+            }),
+          ),
+        ),
         catchError(() => {
           injector.get(AuthStateService).clear();
           void injector.get(Router).navigateByUrl('/login');
           return throwError(() => error);
-        })
+        }),
       );
-    })
+    }),
   );
 };
 
+function requiresCsrfToken(method: string): boolean {
+  return !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
+}
+
 function isApiRequest(requestUrl: string): boolean {
   try {
-    return new URL(requestUrl, window.location.origin).origin === new URL(environment.apiUrl).origin;
+    return (
+      new URL(requestUrl, window.location.origin).origin === new URL(environment.apiUrl).origin
+    );
   } catch {
     return false;
   }
 }
 
 function isAuthRequest(requestUrl: string): boolean {
-  return requestUrl === API_ENDPOINTS.userLogin
-    || requestUrl === API_ENDPOINTS.userRefresh
-    || requestUrl === API_ENDPOINTS.userLogout
-    || requestUrl === API_ENDPOINTS.userRegister;
+  return (
+    requestUrl === API_ENDPOINTS.userLogin ||
+    requestUrl === API_ENDPOINTS.userRefresh ||
+    requestUrl === API_ENDPOINTS.userLogout ||
+    requestUrl === API_ENDPOINTS.userRegister
+  );
 }

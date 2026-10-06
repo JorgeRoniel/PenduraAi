@@ -10,6 +10,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,10 +25,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
@@ -203,6 +204,41 @@ class ApiPenduraAiApplicationTests {
 				.andExpect(header().doesNotExist(
 						HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN
 				));
+	}
+
+	@Test
+	@Transactional
+	void postWithoutCsrfTokenIsRejected() throws Exception {
+		mock.perform(
+				post("/api/user/register")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+                            {
+                              "nome": "Usuário CSRF",
+                              "email": "csrf1@mail.com",
+                              "senha": "123456"
+                            }
+                            """)
+		)
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@Transactional
+	void postWithCsrfTokenIsAccepted() throws Exception {
+		mock.perform(
+				post("/api/user/register")
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+                            {
+                              "nome": "Usuário CSRF",
+                              "email": "csrf1@mail.com",
+                              "senha": "123456"
+                            }
+                            """)
+		)
+				.andExpect(status().isCreated());
 	}
 
 	// Container Postgres para rodar os testes de integração: Backend <--> BD.
