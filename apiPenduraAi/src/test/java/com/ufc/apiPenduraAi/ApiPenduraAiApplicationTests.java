@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Container;
@@ -35,13 +36,16 @@ class ApiPenduraAiApplicationTests {
 	private final WebApplicationContext context;
 	private final UserRepository repository;
 	private final DividaRepository dividaRepository;
+	private final JdbcTemplate jdbcTemplate;
+
 	private MockMvc mock;
 
 	@Autowired
-	public ApiPenduraAiApplicationTests(WebApplicationContext context, UserRepository repository, DividaRepository dividaRepository){
+	public ApiPenduraAiApplicationTests(WebApplicationContext context, UserRepository repository, DividaRepository dividaRepository, JdbcTemplate jdbcTemplate){
 		this.repository = repository;
 		this.context = context;
 		this.dividaRepository = dividaRepository;
+		this.jdbcTemplate = jdbcTemplate;
 	}
 
 	@BeforeEach
@@ -136,6 +140,24 @@ class ApiPenduraAiApplicationTests {
 		)
 				.andExpect(status().isBadRequest())
 				.andExpect(content().string("Campo de ordenação não permitido: senha"));
+	}
+
+	@Test
+	void databaseContainsDebtQueryIndex(){
+		Boolean indexExists = jdbcTemplate.queryForObject(
+				"""
+					SELECT EXISTS (
+						SELECT 1
+						FROM pg_indexes
+						WHERE schemaname = CURRENT_SCHEMA()
+						  AND tablename = 'dividas_tb'
+						  AND indexname = 'idx_dividas_user_cliente'
+					)
+					""",
+				Boolean.class
+		);
+
+		assertTrue(Boolean.TRUE.equals(indexExists));
 	}
 
 	// Container Postgres para rodar os testes de integração: Backend <--> BD.
