@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
@@ -158,6 +161,48 @@ class ApiPenduraAiApplicationTests {
 		);
 
 		assertTrue(Boolean.TRUE.equals(indexExists));
+	}
+
+	@Test
+	void corsAllowsEveryConfiguredOrigin() throws Exception {
+		for(String origin : new String[]{
+				"http://localhost:4200",
+				"http://localhost:4300"
+		}) {
+			mock.perform(
+					options("/api/user/me")
+							.header(HttpHeaders.ORIGIN, origin)
+							.header(
+									HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD,
+									HttpMethod.GET.name()
+							)
+			)
+					.andExpect(status().isOk())
+					.andExpect(header().string(
+							HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+							origin
+					));
+		}
+	}
+
+	@Test
+	void corsRejectsUnknownOrigin() throws Exception {
+
+		mock.perform(
+				options("/api/user/me")
+						.header(
+								HttpHeaders.ORIGIN,
+								"https://malicious.com"
+						)
+						.header(
+								HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD,
+								HttpMethod.GET.name()
+						)
+		)
+				.andExpect(status().isForbidden())
+				.andExpect(header().doesNotExist(
+						HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN
+				));
 	}
 
 	// Container Postgres para rodar os testes de integração: Backend <--> BD.
