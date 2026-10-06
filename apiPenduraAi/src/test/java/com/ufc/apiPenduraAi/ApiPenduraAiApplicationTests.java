@@ -24,8 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 @SpringBootTest
@@ -53,13 +52,13 @@ class ApiPenduraAiApplicationTests {
 	}
 
 	@Test
-	void unauthenticateUserCannotListUsers() throws Exception {
+	void unauthenticatedUserCannotListUsers() throws Exception {
 		mock.perform(get("/api/user"))
 				.andExpect(status().isUnauthorized());
 	}
 
 	@Test
-	void CommonUserCannotListUsers() throws Exception {
+	void commonUserCannotListUsers() throws Exception {
 		mock.perform(get("/api/user")
 						.with(user("user@example.com").roles("USER"))
 				)
@@ -67,7 +66,7 @@ class ApiPenduraAiApplicationTests {
 	}
 
 	@Test
-	void authenticateUserCanListUsers() throws Exception {
+	void adminCanListUsers() throws Exception {
 		mock.perform(get("/api/user")
 						.with(user("user@example.com").roles("ADMIN"))
 				)
@@ -125,6 +124,18 @@ class ApiPenduraAiApplicationTests {
 		)
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.size").value(50));
+	}
+
+	@Test
+	void userListRejectsForbiddenSortField() throws Exception{
+		mock.perform(
+				get("/api/user")
+						.param("sort", "nome,desc")
+						.param("sort", "senha,asc")
+						.with(user("admin@mail.com").roles("ADMIN"))
+		)
+				.andExpect(status().isBadRequest())
+				.andExpect(content().string("Campo de ordenação não permitido: senha"));
 	}
 
 	// Container Postgres para rodar os testes de integração: Backend <--> BD.

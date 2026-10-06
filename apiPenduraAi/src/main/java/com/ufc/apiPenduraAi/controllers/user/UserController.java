@@ -7,6 +7,7 @@ import com.ufc.apiPenduraAi.domain.user.User;
 import com.ufc.apiPenduraAi.exceptions.token.InvalidTokenException;
 import com.ufc.apiPenduraAi.services.token.TokenService;
 import com.ufc.apiPenduraAi.services.user.UserServices;
+import com.ufc.apiPenduraAi.utils.PageableSortValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.beans.factory.annotation.Value;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/user")
@@ -33,6 +35,8 @@ public class UserController {
 
     private final UserServices services;
     private final TokenService tokenService;
+
+    private static final Set<String> ALLOWEDFIELDS = Set.of("nome", "email", "createdAt");
 
     @Value("${auth.cookie.secure}")
     private boolean secureCookie;
@@ -84,6 +88,7 @@ public class UserController {
     public ResponseEntity<Page<ReturnUserDTO>> listUsers(
             @PageableDefault(size = 10, sort = "nome") Pageable pageable
     ) {
+        PageableSortValidator.validate(pageable, ALLOWEDFIELDS);
         return ResponseEntity.ok(services.listAllUsers(pageable));
     }
 
