@@ -6,13 +6,13 @@ import com.ufc.apiPenduraAi.dtos.divida.CreateDividaDTO;
 import com.ufc.apiPenduraAi.dtos.divida.ReturnDividasDTO;
 import com.ufc.apiPenduraAi.dtos.divida.UpdateDividaDTO;
 import com.ufc.apiPenduraAi.exceptions.divida.NotFoundDivida;
-import com.ufc.apiPenduraAi.exceptions.user.NotFoundUser;
 import com.ufc.apiPenduraAi.repositories.divida.DividaRepository;
-import com.ufc.apiPenduraAi.repositories.user.UserRepository;
+
 import com.ufc.apiPenduraAi.services.divida.DividaServices;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -21,18 +21,14 @@ import org.springframework.stereotype.Service;
 public class DividaServicesImpl implements DividaServices {
 
     private final DividaRepository repository;
-    private final UserRepository userRepository;
 
     private User getAuthenticatedUser() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("Usuário não autenticado");
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if(auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof User user)){
+            throw new AuthenticationCredentialsNotFoundException("Usuário não autenticado");
         }
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email);
-        if (user == null) {
-            throw new NotFoundUser("Usuário autenticado não encontrado!");
-        }
+
         return user;
     }
 
