@@ -6,6 +6,7 @@ import com.ufc.apiPenduraAi.dtos.user.ReturnUserDTO;
 import com.ufc.apiPenduraAi.domain.user.User;
 import com.ufc.apiPenduraAi.exceptions.token.InvalidTokenException;
 import com.ufc.apiPenduraAi.services.refresh.RefreshSessionService;
+import com.ufc.apiPenduraAi.services.ratelimit.RateLimitService;
 import com.ufc.apiPenduraAi.services.token.TokenService;
 import com.ufc.apiPenduraAi.services.user.UserServices;
 import com.ufc.apiPenduraAi.utils.PageableSortValidator;
@@ -21,6 +22,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseCookie;
 import org.springframework.beans.factory.annotation.Value;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.util.Set;
 
@@ -37,6 +39,7 @@ public class UserController {
     private final UserServices services;
     private final TokenService tokenService;
     private final RefreshSessionService refreshSessionService;
+    private final RateLimitService rateLimitService;
 
     private static final Set<String> ALLOWEDFIELDS = Set.of("nome", "email", "createdAt");
 
@@ -44,14 +47,24 @@ public class UserController {
     private boolean secureCookie;
 
     @PostMapping("/register")
-    public ResponseEntity<String> createUser(@RequestBody @Valid CreateUserDTO data) {
+    public ResponseEntity<String> createUser(
+            @RequestBody @Valid CreateUserDTO data,
+            HttpServletRequest request
+    ) {
+        rateLimitService.checkRegistration(clientAddress(request));
         services.createUser(data);
         return ResponseEntity.status(HttpStatus.CREATED).body("Usuário criado com sucesso!");
     }
 
     @PostMapping("/auth/login")
-    public ResponseEntity<ReturnUserDTO> login(@RequestBody @Valid LoginUserDTO data, HttpServletResponse response) {
+    public ResponseEntity<ReturnUserDTO> login(
+            @RequestBody @Valid LoginUserDTO data,
+            HttpServletResponse response,
+            HttpServletRequest request
+    ) {
+        rateLimitService.checkLogin(clientAddress(request), data.email());
         User user = services.authUser(data);
+        rateLimitService.resetLoginAttempts(data.email());
         String refreshToken = refreshSessionService.createSession(user);
         addAuthCookies(response, user, refreshToken);
         return ResponseEntity.ok(toUserDto(user));
@@ -60,8 +73,10 @@ public class UserController {
     @PostMapping("/auth/refresh")
     public ResponseEntity<Void> refresh(
             @CookieValue(value = REFRESH_COOKIE, required = false) String refreshToken,
-            HttpServletResponse response
+            HttpServletResponse response,
+            HttpServletRequest request
     ) {
+        rateLimitService.checkRefresh(clientAddress(request), refreshToken);
         if (refreshToken == null || refreshToken.isBlank()) {
             throw new InvalidTokenException("Token de atualização ausente");
         }
@@ -117,5 +132,9 @@ public class UserController {
 
     private ReturnUserDTO toUserDto(User user) {
         return new ReturnUserDTO(user.getId(), user.getNome(), user.getEmail(), user.getRole().name(), user.getCreatedAt());
+    }
+
+    private String clientAddress(HttpServletRequest request) {
+        return request.getRemoteAddr();
     }
 }

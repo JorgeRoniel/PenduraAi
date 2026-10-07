@@ -2,6 +2,7 @@ package com.ufc.apiPenduraAi.infra;
 
 import com.ufc.apiPenduraAi.exceptions.divida.NotFoundDivida;
 import com.ufc.apiPenduraAi.exceptions.token.InvalidTokenException;
+import com.ufc.apiPenduraAi.exceptions.security.RateLimitExceededException;
 import com.ufc.apiPenduraAi.exceptions.user.NotFoundUser;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -60,6 +61,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<String> invalidTokenHandler(InvalidTokenException exception) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(exception.getMessage());
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<String> rateLimitExceededHandler(RateLimitExceededException exception) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, Long.toString(exception.getRetryAfterSeconds()))
+                .body(exception.getMessage());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -6,6 +6,7 @@ import com.ufc.apiPenduraAi.dtos.user.CreateUserDTO;
 import com.ufc.apiPenduraAi.dtos.user.LoginUserDTO;
 import com.ufc.apiPenduraAi.dtos.user.ReturnUserDTO;
 import com.ufc.apiPenduraAi.services.refresh.RefreshSessionService;
+import com.ufc.apiPenduraAi.services.ratelimit.RateLimitService;
 import com.ufc.apiPenduraAi.services.token.TokenService;
 import com.ufc.apiPenduraAi.services.user.UserServices;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -32,7 +34,8 @@ class UserControllerTest {
         controller = new UserController(
                 new UserServicesStub(),
                 new TokenServiceStub(),
-                refreshSessionService
+                refreshSessionService,
+                new RateLimitServiceStub()
         );
         ReflectionTestUtils.setField(controller, "secureCookie", true);
     }
@@ -41,7 +44,8 @@ class UserControllerTest {
     void loginSetsAccessAndRefreshCookiesWithoutReturningTokens() {
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        var result = controller.login(new LoginUserDTO("ana@example.com", "123456"), response);
+        var result = controller.login(
+                new LoginUserDTO("ana@example.com", "123456"), response, request());
 
         List<String> cookies = response.getHeaders("Set-Cookie");
         assertEquals(200, result.getStatusCode().value());
@@ -56,7 +60,7 @@ class UserControllerTest {
     void refreshRotatesAndSetsAccessAndRefreshCookies() {
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        var result = controller.refresh("refresh-token", response);
+        var result = controller.refresh("refresh-token", response, request());
 
         List<String> cookies = response.getHeaders("Set-Cookie");
         assertEquals(204, result.getStatusCode().value());
@@ -148,5 +152,29 @@ class UserControllerTest {
         public void revokeSession(String refreshToken) {
             revoked = true;
         }
+    }
+
+    private static class RateLimitServiceStub implements RateLimitService {
+        @Override
+        public void checkLogin(String clientAddress, String email) {
+        }
+
+        @Override
+        public void resetLoginAttempts(String email) {
+        }
+
+        @Override
+        public void checkRegistration(String clientAddress) {
+        }
+
+        @Override
+        public void checkRefresh(String clientAddress, String refreshToken) {
+        }
+    }
+
+    private MockHttpServletRequest request() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("127.0.0.1");
+        return request;
     }
 }
