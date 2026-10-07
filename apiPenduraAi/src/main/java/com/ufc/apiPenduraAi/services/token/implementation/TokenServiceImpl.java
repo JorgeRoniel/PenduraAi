@@ -28,18 +28,8 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public String createRefreshToken(User user) {
-        return createToken(user, "refresh", 7, ChronoUnit.DAYS);
-    }
-
-    @Override
     public String verifyAccessToken(String token) {
         return verifyToken(token, "access");
-    }
-
-    @Override
-    public String verifyRefreshToken(String token) {
-        return verifyToken(token, "refresh");
     }
 
     private String createToken(User user, String tokenType, long expirationAmount, ChronoUnit expirationUnit) {

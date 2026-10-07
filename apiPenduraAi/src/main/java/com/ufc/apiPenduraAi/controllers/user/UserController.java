@@ -5,6 +5,7 @@ import com.ufc.apiPenduraAi.dtos.user.LoginUserDTO;
 import com.ufc.apiPenduraAi.dtos.user.ReturnUserDTO;
 import com.ufc.apiPenduraAi.domain.user.User;
 import com.ufc.apiPenduraAi.exceptions.token.InvalidTokenException;
+import com.ufc.apiPenduraAi.services.refresh.RefreshSessionService;
 import com.ufc.apiPenduraAi.services.token.TokenService;
 import com.ufc.apiPenduraAi.services.user.UserServices;
 import com.ufc.apiPenduraAi.utils.PageableSortValidator;
@@ -35,6 +36,7 @@ public class UserController {
 
     private final UserServices services;
     private final TokenService tokenService;
+    private final RefreshSessionService refreshSessionService;
 
     private static final Set<String> ALLOWEDFIELDS = Set.of("nome", "email", "createdAt");
 
@@ -50,7 +52,8 @@ public class UserController {
     @PostMapping("/auth/login")
     public ResponseEntity<ReturnUserDTO> login(@RequestBody @Valid LoginUserDTO data, HttpServletResponse response) {
         User user = services.authUser(data);
-        addAuthCookies(response, user);
+        String refreshToken = refreshSessionService.createSession(user);
+        addAuthCookies(response, user, refreshToken);
         return ResponseEntity.ok(toUserDto(user));
     }
 
@@ -63,17 +66,20 @@ public class UserController {
             throw new InvalidTokenException("Token de atualização ausente");
         }
 
-        User user = services.findByEmail(tokenService.verifyRefreshToken(refreshToken));
-        if (user == null) {
-            throw new InvalidTokenException("Token de atualização inválido");
-        }
+        var rotation = refreshSessionService.rotateSession(refreshToken);
         response.addHeader("Set-Cookie", createCookie(
-                ACCESS_COOKIE, tokenService.createAccessToken(user), "/", ACCESS_TOKEN_DURATION).toString());
+                ACCESS_COOKIE, tokenService.createAccessToken(rotation.user()), "/", ACCESS_TOKEN_DURATION).toString());
+        response.addHeader("Set-Cookie", createCookie(
+                REFRESH_COOKIE, rotation.refreshToken(), "/api/user/auth", REFRESH_TOKEN_DURATION).toString());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/auth/logout")
-    public ResponseEntity<Void> logout(HttpServletResponse response) {
+    public ResponseEntity<Void> logout(
+            @CookieValue(value = REFRESH_COOKIE, required = false) String refreshToken,
+            HttpServletResponse response
+    ) {
+        refreshSessionService.revokeSession(refreshToken);
         response.addHeader("Set-Cookie", createCookie(ACCESS_COOKIE, "", "/", Duration.ZERO).toString());
         response.addHeader("Set-Cookie", createCookie(REFRESH_COOKIE, "", "/api/user/auth", Duration.ZERO).toString());
         return ResponseEntity.noContent().build();
@@ -92,11 +98,11 @@ public class UserController {
         return ResponseEntity.ok(services.listAllUsers(pageable));
     }
 
-    private void addAuthCookies(HttpServletResponse response, User user) {
+    private void addAuthCookies(HttpServletResponse response, User user, String refreshToken) {
         response.addHeader("Set-Cookie", createCookie(
                 ACCESS_COOKIE, tokenService.createAccessToken(user), "/", ACCESS_TOKEN_DURATION).toString());
         response.addHeader("Set-Cookie", createCookie(
-                REFRESH_COOKIE, tokenService.createRefreshToken(user), "/api/user/auth", REFRESH_TOKEN_DURATION).toString());
+                REFRESH_COOKIE, refreshToken, "/api/user/auth", REFRESH_TOKEN_DURATION).toString());
     }
 
     private ResponseCookie createCookie(String name, String value, String path, Duration maxAge) {

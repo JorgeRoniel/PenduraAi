@@ -23,12 +23,10 @@ class TokenServiceImplTest {
     }
 
     @Test
-    void validatesAccessTokensOnlyAsAccessTokens() {
+    void createsAndValidatesAccessToken() {
         String accessToken = service.createAccessToken(user);
-        String refreshToken = service.createRefreshToken(user);
 
         assertEquals("ana@example.com", service.verifyAccessToken(accessToken));
-        assertThrows(InvalidTokenException.class, () -> service.verifyAccessToken(refreshToken));
-        assertThrows(InvalidTokenException.class, () -> service.verifyRefreshToken(accessToken));
+        assertThrows(InvalidTokenException.class, () -> service.verifyAccessToken("invalid-token"));
     }
 }
