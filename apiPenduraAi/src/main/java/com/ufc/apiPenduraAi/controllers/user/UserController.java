@@ -2,9 +2,14 @@ package com.ufc.apiPenduraAi.controllers.user;
 
 import com.ufc.apiPenduraAi.dtos.user.CreateUserDTO;
 import com.ufc.apiPenduraAi.dtos.user.LoginUserDTO;
-import com.ufc.apiPenduraAi.dtos.user.ReturnLoginDTO;
 import com.ufc.apiPenduraAi.dtos.user.ReturnUserDTO;
+import com.ufc.apiPenduraAi.domain.user.User;
+import com.ufc.apiPenduraAi.exceptions.token.InvalidTokenException;
+import com.ufc.apiPenduraAi.services.refresh.RefreshSessionService;
+import com.ufc.apiPenduraAi.services.ratelimit.RateLimitService;
+import com.ufc.apiPenduraAi.services.token.TokenService;
 import com.ufc.apiPenduraAi.services.user.UserServices;
+import com.ufc.apiPenduraAi.utils.PageableSortValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -13,29 +18,123 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.http.ResponseCookie;
+import org.springframework.beans.factory.annotation.Value;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
 public class UserController {
 
+    private static final String ACCESS_COOKIE = "ACCESS_TOKEN";
+    private static final String REFRESH_COOKIE = "REFRESH_TOKEN";
+    private static final Duration ACCESS_TOKEN_DURATION = Duration.ofMinutes(15);
+    private static final Duration REFRESH_TOKEN_DURATION = Duration.ofDays(7);
+
     private final UserServices services;
+    private final TokenService tokenService;
+    private final RefreshSessionService refreshSessionService;
+    private final RateLimitService rateLimitService;
+
+    private static final Set<String> ALLOWEDFIELDS = Set.of("nome", "email", "createdAt");
+
+    @Value("${auth.cookie.secure}")
+    private boolean secureCookie;
 
     @PostMapping("/register")
-    public ResponseEntity<String> createUser(@RequestBody @Valid CreateUserDTO data) {
+    public ResponseEntity<String> createUser(
+            @RequestBody @Valid CreateUserDTO data,
+            HttpServletRequest request
+    ) {
+        rateLimitService.checkRegistration(clientAddress(request));
         services.createUser(data);
         return ResponseEntity.status(HttpStatus.CREATED).body("Usuário criado com sucesso!");
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<ReturnLoginDTO> login(@RequestBody @Valid LoginUserDTO data) {
-        return ResponseEntity.status(HttpStatus.OK).body(services.authUser(data));
+    @PostMapping("/auth/login")
+    public ResponseEntity<ReturnUserDTO> login(
+            @RequestBody @Valid LoginUserDTO data,
+            HttpServletResponse response,
+            HttpServletRequest request
+    ) {
+        rateLimitService.checkLogin(clientAddress(request), data.email());
+        User user = services.authUser(data);
+        rateLimitService.resetLoginAttempts(data.email());
+        String refreshToken = refreshSessionService.createSession(user);
+        addAuthCookies(response, user, refreshToken);
+        return ResponseEntity.ok(toUserDto(user));
+    }
+
+    @PostMapping("/auth/refresh")
+    public ResponseEntity<Void> refresh(
+            @CookieValue(value = REFRESH_COOKIE, required = false) String refreshToken,
+            HttpServletResponse response,
+            HttpServletRequest request
+    ) {
+        rateLimitService.checkRefresh(clientAddress(request), refreshToken);
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new InvalidTokenException("Token de atualização ausente");
+        }
+
+        var rotation = refreshSessionService.rotateSession(refreshToken);
+        response.addHeader("Set-Cookie", createCookie(
+                ACCESS_COOKIE, tokenService.createAccessToken(rotation.user()), "/", ACCESS_TOKEN_DURATION).toString());
+        response.addHeader("Set-Cookie", createCookie(
+                REFRESH_COOKIE, rotation.refreshToken(), "/api/user/auth", REFRESH_TOKEN_DURATION).toString());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/auth/logout")
+    public ResponseEntity<Void> logout(
+            @CookieValue(value = REFRESH_COOKIE, required = false) String refreshToken,
+            HttpServletResponse response
+    ) {
+        refreshSessionService.revokeSession(refreshToken);
+        response.addHeader("Set-Cookie", createCookie(ACCESS_COOKIE, "", "/", Duration.ZERO).toString());
+        response.addHeader("Set-Cookie", createCookie(REFRESH_COOKIE, "", "/api/user/auth", Duration.ZERO).toString());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ReturnUserDTO> currentUser(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(toUserDto(user));
     }
 
     @GetMapping
     public ResponseEntity<Page<ReturnUserDTO>> listUsers(
             @PageableDefault(size = 10, sort = "nome") Pageable pageable
     ) {
+        PageableSortValidator.validate(pageable, ALLOWEDFIELDS);
         return ResponseEntity.ok(services.listAllUsers(pageable));
+    }
+
+    private void addAuthCookies(HttpServletResponse response, User user, String refreshToken) {
+        response.addHeader("Set-Cookie", createCookie(
+                ACCESS_COOKIE, tokenService.createAccessToken(user), "/", ACCESS_TOKEN_DURATION).toString());
+        response.addHeader("Set-Cookie", createCookie(
+                REFRESH_COOKIE, refreshToken, "/api/user/auth", REFRESH_TOKEN_DURATION).toString());
+    }
+
+    private ResponseCookie createCookie(String name, String value, String path, Duration maxAge) {
+        return ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .secure(secureCookie)
+                .sameSite("Lax")
+                .path(path)
+                .maxAge(maxAge)
+                .build();
+    }
+
+    private ReturnUserDTO toUserDto(User user) {
+        return new ReturnUserDTO(user.getId(), user.getNome(), user.getEmail(), user.getRole().name(), user.getCreatedAt());
+    }
+
+    private String clientAddress(HttpServletRequest request) {
+        return request.getRemoteAddr();
     }
 }

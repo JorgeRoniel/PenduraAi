@@ -1,0 +1,123 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+.auth-page {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.9fr) minmax(24rem, 1.1fr);
+  min-height: 100vh;
+  background: var(--color-surface);
+}
+.auth-brand-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: clamp(var(--space-6), 6vw, var(--space-12));
+  color: var(--color-ink-inverse);
+  background: var(--color-primary);
+}
+.brand {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  text-decoration: none;
+}
+.brand-logo {
+  display: block;
+  width: 10rem;
+  height: 10rem;
+  object-fit: contain;
+}
+.brand-message {
+  max-width: 28rem;
+  margin-block: auto;
+}
+.brand-message .eyebrow {
+  color: var(--color-ink);
+}
+.brand-message h1 {
+  max-width: 11ch;
+  margin: var(--space-4) 0 var(--space-6);
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 400;
+  letter-spacing: -0.06em;
+  line-height: 0.98;
+}
+.brand-message p {
+  max-width: 25rem;
+  color: rgb(0 0 0 / 70%);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+.brand-footer {
+  color: rgb(0 0 0 / 65%);
+  font-size: 0.78rem;
+}
+.auth-content {
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: var(--color-surface-raised);
+}
+.auth-card {
+  width: min(100%, 31rem);
+  padding: clamp(var(--space-6), 5vw, var(--space-10));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+.auth-heading {
+  margin-bottom: var(--space-8);
+}
+.auth-heading h2 {
+  margin: var(--space-3) 0 var(--space-3);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+}
+.auth-heading p,
+.auth-alternate {
+  color: var(--color-ink-muted);
+  line-height: 1.55;
+}
+.auth-alternate {
+  margin: var(--space-6) 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+.auth-alternate a {
+  color: var(--color-primary-strong);
+  font-weight: 700;
+}
+@media (max-width: 760px) {
+  .auth-page {
+    grid-template-columns: 1fr;
+  }
+  .auth-brand-panel {
+    min-height: 16rem;
+    padding: var(--space-6);
+  }
+  .brand-logo {
+    width: 4rem;
+    height: 4rem;
+  }
+  .brand-message {
+    margin-block: var(--space-8);
+  }
+  .brand-message h1 {
+    font-size: clamp(2rem, 9vw, 3rem);
+  }
+  .brand-message p,
+  .brand-footer {
+    display: none;
+  }
+  .auth-content {
+    align-items: start;
+    padding: var(--space-5);
+  }
+}

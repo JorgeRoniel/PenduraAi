@@ -1,0 +1,37 @@
+<app-auth-layout
+  title="Bem-vindo de volta"
+  description="Entre para acompanhar suas pendências e manter tudo organizado."
+  alternateText="Ainda não possui uma conta?"
+  alternateLabel="Cadastre-se"
+  alternateLink="/register"
+>
+  <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    @if (errorMessage()) {
+      <app-feedback [message]="errorMessage()" tone="error" />
+    }
+
+    <div class="field">
+      <label for="login-email">E-mail</label>
+      <input id="login-email" type="email" formControlName="email" autocomplete="email" placeholder="voce@exemplo.com"
+        [attr.aria-invalid]="form.controls.email.invalid && (form.controls.email.touched || submitted())"
+        aria-describedby="login-email-error" />
+      @if (form.controls.email.invalid && (form.controls.email.touched || submitted())) {
+        <span class="field-error" id="login-email-error">Informe um e-mail válido.</span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="login-password">Senha</label>
+      <input id="login-password" type="password" formControlName="senha" autocomplete="current-password" placeholder="Digite sua senha"
+        [attr.aria-invalid]="form.controls.senha.invalid && (form.controls.senha.touched || submitted())"
+        aria-describedby="login-password-error" />
+      @if (form.controls.senha.invalid && (form.controls.senha.touched || submitted())) {
+        <span class="field-error" id="login-password-error">Informe sua senha.</span>
+      }
+    </div>
+
+    <button class="form-submit" type="submit" [disabled]="isSubmitting()">
+      @if (isSubmitting()) { Entrando... } @else { Entrar }
+    </button>
+  </form>
+</app-auth-layout>

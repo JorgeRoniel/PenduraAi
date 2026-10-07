@@ -1,0 +1,14 @@
+:host { display: block; }
+.debt-card { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(9rem, .7fr) auto; align-items: center; gap: var(--space-5); padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-raised); box-shadow: 0 4px 14px rgb(0 0 0 / 5%); }
+.debt-label { display: block; color: var(--color-ink-muted); font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.debt-info h3 { margin: .25rem 0 .35rem; color: var(--color-ink); font-family: var(--font-display); font-size: 1.2rem; font-weight: 400; }
+.debt-date { color: var(--color-ink-muted); font-size: .78rem; }
+.debt-value strong { display: block; margin-top: .3rem; color: var(--color-primary-strong); font-family: var(--font-display); font-size: 1.25rem; font-weight: 400; }
+.debt-actions { display: flex; gap: var(--space-2); }
+.button { min-height: 2.5rem; padding: .55rem .85rem; border: 1px solid transparent; border-radius: var(--radius-sm); cursor: pointer; font-size: .82rem; font-weight: 700; transition: background var(--transition-fast), transform var(--transition-fast); }
+.button:hover { transform: translateY(-1px); }
+.button-secondary { border-color: var(--color-border); color: var(--color-ink); background: var(--color-surface); }
+.button-secondary:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
+.button-danger { color: var(--color-ink-inverse); background: var(--color-danger); }
+.button-danger:hover { background: var(--color-danger-strong); }
+@media (max-width: 680px) { .debt-card { grid-template-columns: 1fr 1fr; } .debt-actions { grid-column: 1 / -1; } .debt-actions .button { flex: 1; } }

@@ -4,11 +4,10 @@ import com.ufc.apiPenduraAi.domain.user.User;
 import com.ufc.apiPenduraAi.domain.user.UserRoles;
 import com.ufc.apiPenduraAi.dtos.user.CreateUserDTO;
 import com.ufc.apiPenduraAi.dtos.user.LoginUserDTO;
-import com.ufc.apiPenduraAi.dtos.user.ReturnLoginDTO;
 import com.ufc.apiPenduraAi.dtos.user.ReturnUserDTO;
 import com.ufc.apiPenduraAi.repositories.user.UserRepository;
-import com.ufc.apiPenduraAi.services.token.TokenService;
 import com.ufc.apiPenduraAi.services.user.UserServices;
+import com.ufc.apiPenduraAi.utils.EmailNormalizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,25 +23,31 @@ public class UserServicesImpl implements UserServices {
     private final UserRepository repository;
     private final PasswordEncoder encoder;
     private final AuthenticationManager authenticationManager;
-    private final TokenService tokenService;
 
     @Override
     public User createUser(CreateUserDTO data) {
-        if (repository.existsByEmail(data.email())) {
+
+        String normalizedEmail = EmailNormalizer.normalized(data.email());
+
+        if (repository.existsByEmail(normalizedEmail)) {
             throw new IllegalArgumentException("Email já cadastrado!");
         }
         String pass = encoder.encode(data.senha());
-        User user = new User(data.nome(), data.email(), pass, UserRoles.USER);
+        User user = new User(data.nome(), normalizedEmail, pass, UserRoles.USER);
         return repository.save(user);
     }
 
     @Override
-    public ReturnLoginDTO authUser(LoginUserDTO data) {
-        var emailpass = new UsernamePasswordAuthenticationToken(data.email(), data.senha());
+    public User authUser(LoginUserDTO data) {
+        String normalizedEmail = EmailNormalizer.normalized(data.email());
+        var emailpass = new UsernamePasswordAuthenticationToken(normalizedEmail, data.senha());
         var auth = authenticationManager.authenticate(emailpass);
-        User user = (User) auth.getPrincipal();
-        String token = tokenService.createToken(user);
-        return new ReturnLoginDTO(token, user.getId(), user.getEmail(), user.getNome(), user.getRole().name());
+        return (User) auth.getPrincipal();
+    }
+
+    @Override
+    public User findByEmail(String email) {
+        return repository.findByEmail(EmailNormalizer.normalized(email));
     }
 
     @Override
