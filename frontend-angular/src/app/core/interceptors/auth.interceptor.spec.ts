@@ -50,6 +50,14 @@ describe('authInterceptor', () => {
     request.flush({});
   });
 
+  it('does not add credentials to a non API request on the same origin', () => {
+    client.get('/favIcon_pa.png').subscribe();
+
+    const request = http.expectOne('/favIcon_pa.png');
+    expect(request.request.withCredentials).toBeFalse();
+    request.flush({});
+  });
+
   it('refreshes the session once and retries an unauthorized API request', () => {
     document.cookie = 'XSRF-TOKEN=refresh-csrf-token; Path=/';
     let completed = false;

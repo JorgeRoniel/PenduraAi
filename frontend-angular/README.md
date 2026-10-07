@@ -1,6 +1,6 @@
 # Pendura Aí — frontend Angular
 
-Frontend oficial do Pendura Aí. O React em `Projeto-web/` foi mantido apenas como legado temporário; a distribuição oficial usa a imagem Angular/Nginx publicada como `jorgeroniel07/pendura-ai-client:0.0.5`.
+Frontend oficial do Pendura Aí. O React em `Projeto-web/` foi mantido apenas como legado temporário. A publicação no Render usa o `Dockerfile` da raiz para servir Angular e API no mesmo endereço.
 
 ## Requisitos
 
@@ -26,17 +26,9 @@ npm start
 
 A aplicação ficará em `http://localhost:4200` e o ambiente de desenvolvimento usa `http://localhost:8080`, configurado em `src/environments/environment.ts`.
 
-## Build Docker de produção
+## Build de produção
 
-`API_URL` é obrigatório e fica incorporado ao bundle Angular. Use uma URL acessível pelo navegador:
-
-```bash
-docker build \
-  --build-arg API_URL=https://api.exemplo.com \
-  -t jorgeroniel07/pendura-ai-client:0.0.5 .
-```
-
-A imagem serve os arquivos pela porta interna `80`. O Nginx usa `try_files` com fallback para `index.html`, permitindo abrir diretamente `/`, `/login` e `/register`.
+Execute `npm run build -- --configuration production`. O bundle de produção usa a API em `/api` no mesmo endereço. Para a imagem completa de publicação, execute `docker build -t pendura-ai:local .` na raiz do projeto.
 
 ## Validação
 
@@ -45,12 +37,12 @@ npm run build -- --configuration production
 npm test -- --watch=false --browsers=ChromeHeadless
 ```
 
-O build local de produção mantém o marcador de URL até que uma imagem seja construída com `API_URL`; a imagem publicada sempre deve ser gerada com esse argumento.
+Os testes usam a API local configurada em `src/environments/environment.ts`.
 
 ## Funcionalidades
 
 - Login e cadastro com Reactive Forms.
-- Sessão JWT persistida no `localStorage`.
+- Sessão por cookies `HttpOnly`, com renovação de sessão.
 - Proteção de rotas públicas e privadas.
 - Pesquisa paginada, cadastro, atualização e quitação de dívidas.
 - Feedbacks de carregamento, sucesso, erro e lista vazia.

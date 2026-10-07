@@ -64,8 +64,10 @@ function requiresCsrfToken(method: string): boolean {
 
 function isApiRequest(requestUrl: string): boolean {
   try {
+    const url = new URL(requestUrl, window.location.origin);
+    const apiOrigin = new URL(environment.apiUrl || '/', window.location.origin).origin;
     return (
-      new URL(requestUrl, window.location.origin).origin === new URL(environment.apiUrl).origin
+      url.origin === apiOrigin && url.pathname.startsWith('/api/')
     );
   } catch {
     return false;

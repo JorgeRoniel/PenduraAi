@@ -94,6 +94,19 @@ class ApiPenduraAiApplicationTests {
 	}
 
 	@Test
+	void publicDeploymentRoutesRemainAccessibleWithoutLogin() throws Exception {
+		mock.perform(get("/health"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("ok"));
+		mock.perform(get("/login"))
+				.andExpect(status().isOk())
+				.andExpect(forwardedUrl("/index.html"));
+		mock.perform(get("/register"))
+				.andExpect(status().isOk())
+				.andExpect(forwardedUrl("/index.html"));
+	}
+
+	@Test
 	void commonUserCannotListUsers() throws Exception {
 		mock.perform(get("/api/user")
 						.with(user("user@example.com").roles("USER"))

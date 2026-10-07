@@ -33,7 +33,7 @@ public class WebSecurityConfig {
     private final SecurityFilter filter;
 
     @Value("${app.cors.allowed-origins}")
-    private String allowedOrigin;
+    private String allowedOrigins;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -56,6 +56,9 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/user/auth/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/user").hasRole(UserRoles.ADMIN.name())
+                        .requestMatchers(HttpMethod.GET, "/health").permitAll()
+                        .requestMatchers("/api/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -64,7 +67,7 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigin));
+        configuration.setAllowedOrigins(List.of(allowedOrigins.split("\\s*,\\s*")));
         configuration.setAllowCredentials(true);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
